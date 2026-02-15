@@ -19,7 +19,7 @@ This project demonstrates a complete data engineering workflow:
 | **Data Processing** | Pandas, NumPy |
 | **Database** | PostgreSQL |
 | **Orchestration** | Apache Airflow |
-| **Visualization** | Power BI / Tableau |
+| **Visualization** | Looker |
 | **Data Quality** | Great Expectations |
 | **Version Control** | Git |
 
@@ -141,11 +141,11 @@ This project is open source and available under the MIT License.
 
 ## 👤 Author
 
-Your Name - [GitHub Profile](https://github.com/YOUR_USERNAME)
+Your Name - [GitHub Profile](https://github.com/margaretajibola)
 
 ## 🙏 Acknowledgments
 
-- IMDB for the dataset
+- IMDB(Kaggle) for the dataset
 - Apache Airflow community
 - Data engineering community
 
