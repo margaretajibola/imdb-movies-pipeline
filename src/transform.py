@@ -21,13 +21,32 @@ def transform_movies(df: pd.DataFrame) -> dict:
     actors = df['stars'].str.split(', ').explode().unique()
     dim_actors = pd.DataFrame({'actor_name': actors})
     
-    # Create fact table
+    # Create fact table (with names, will convert to keys via SQL)
     fact_performance = df[['movie_id', 'director', 'votes', 'gross_millions']].copy()
+    
+    # Create bridge tables (with names, will convert to keys via SQL)
+    # Bridge: Movie-Genre
+    bridge_movie_genre = df[['movie_id', 'genre']].copy()
+    bridge_movie_genre = bridge_movie_genre.assign(
+        genre=bridge_movie_genre['genre'].str.split(', ')
+    ).explode('genre')
+    bridge_movie_genre.columns = ['movie_id', 'genre_name']
+    bridge_movie_genre = bridge_movie_genre.dropna()
+    
+    # Bridge: Movie-Actor
+    bridge_movie_actor = df[['movie_id', 'stars']].copy()
+    bridge_movie_actor = bridge_movie_actor.assign(
+        stars=bridge_movie_actor['stars'].str.split(', ')
+    ).explode('stars')
+    bridge_movie_actor.columns = ['movie_id', 'actor_name']
+    bridge_movie_actor = bridge_movie_actor.dropna()
 
     return {
         'dim_movies': dim_movies,
         'dim_directors': dim_directors,
         'dim_genres': dim_genres,
         'dim_actors': dim_actors,
-        'fact_performance': fact_performance
+        'fact_performance': fact_performance,
+        'bridge_movie_genre': bridge_movie_genre,
+        'bridge_movie_actor': bridge_movie_actor
     }

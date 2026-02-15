@@ -1,23 +1,24 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 
-def load_to_postgres(df: pd.DataFrame, table_name: str, schema: str, engine, load_type='replace'):
+def load_to_postgres(df: pd.DataFrame, table_name: str, schema: str, engine, load_type='append'):
     """Load dataframe to PostgreSQL
     
     Args:
-        load_type: 'replace' (full refresh) or 'append' (incremental)
+        load_type: 'append' (default) or 'replace' (only for staging)
     
     Load Strategy:
-    - Staging: Always 'replace' (temporary data)
-    - Core/Analytics: 'replace' for initial load, 'append' for incremental
+    - Staging: Use 'replace' (no foreign keys)
+    - Core: Use 'append' (has foreign keys, cleared by SQL TRUNCATE)
     """
     if schema == 'staging':
-        # Staging: Full refresh daily
+        # Staging: Can safely use replace (no foreign keys)
         df.to_sql(table_name, engine, schema=schema, 
                   if_exists='replace', index=False)
+        print(f"Loaded {len(df)} rows to {schema}.{table_name} (mode: replace)")
     else:
-        # Core/Analytics: Use specified load type
+        # Core: Use append (tables cleared by SQL TRUNCATE before pipeline runs)
+        # First time: table might not exist, so create it
         df.to_sql(table_name, engine, schema=schema, 
-                  if_exists=load_type, index=False)
-    
-    print(f"Loaded {len(df)} rows to {schema}.{table_name} (mode: {load_type})")
+                  if_exists='append', index=False)
+        print(f"Loaded {len(df)} rows to {schema}.{table_name} (mode: append)")
