@@ -48,36 +48,95 @@ dep_1/
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+- Python 3.9+
+- PostgreSQL installed and running
+- Git
+
+### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/imdb-movies-pipeline.git
+git clone https://github.com/margaretajibola/imdb-movies-pipeline.git
 cd imdb-movies-pipeline
 ```
 
-### 2. Set Up Virtual Environment
+### Step 2: Set Up Virtual Environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment
+### Step 4: Configure Database Connection
 ```bash
-cp .env.example .env
-# Edit .env with your database credentials
+# Edit .env file with your PostgreSQL credentials
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/imdb_warehouse
 ```
 
-### 5. Run the Pipeline
+### Step 5: Set Up Database Schema
 ```bash
-python src/pipeline.py
+# Create database
+psql -U postgres -c "CREATE DATABASE imdb_warehouse;"
+
+# Create schemas
+psql -U postgres -d imdb_warehouse -c "CREATE SCHEMA staging;"
+psql -U postgres -d imdb_warehouse -c "CREATE SCHEMA core;"
+psql -U postgres -d imdb_warehouse -c "CREATE SCHEMA analytics;"
+
+# Create tables
+psql -U postgres -d imdb_warehouse -f sql/ddl/01_staging_tables.sql
+psql -U postgres -d imdb_warehouse -f sql/ddl/02_dimension_tables.sql
+psql -U postgres -d imdb_warehouse -f sql/ddl/03_fact_tables.sql
+```
+
+### Step 6: Run the Pipeline
+
+#### Option A: One-Command Daily Batch (Recommended)
+```bash
+./run_daily_batch.sh
+```
+
+This script automatically:
+1. Clears all tables (full refresh)
+2. Runs Python ETL (extract, transform, load staging & dimensions)
+3. Runs SQL transformations (load fact & bridge tables with keys)
+4. Shows summary of loaded data
+
+#### Option B: Manual Step-by-Step
+```bash
+# 1. Clear all tables
+psql -U postgres -d imdb_warehouse -f sql/dml/clear_tables.sql
+
+# 2. Run Python ETL
+cd src
+python pipeline.py
+cd ..
+
+# 3. Run SQL transformations
+psql -U postgres -d imdb_warehouse -f sql/dml/run_full_etl.sql
+```
+
+### Step 7: Verify Data
+```bash
+psql -U postgres -d imdb_warehouse
+```
+```sql
+-- Check row counts
+SELECT COUNT(*) FROM core.dim_movies;           -- Should be 1000
+SELECT COUNT(*) FROM core.dim_directors;        -- Should be ~50
+SELECT COUNT(*) FROM core.dim_genres;           -- Should be ~20
+SELECT COUNT(*) FROM core.dim_actors;           -- Should be ~100
+SELECT COUNT(*) FROM core.fact_movie_performance;  -- Should be 1000
+SELECT COUNT(*) FROM core.bridge_movie_genre;   -- Should be ~2000
+SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
 ```
 
 ## 📚 Documentation
 
+- [ETL Flow Guide](ETL_FLOW_GUIDE.md) - Complete ETL process explanation
 - [Project Documentation](PROJECT_DOCUMENTATION.md) - Complete project overview
 - [Architecture](ARCHITECTURE.md) - Technical architecture and data flow
 - [Implementation Roadmap](IMPLEMENTATION_ROADMAP.md) - Step-by-step guide
@@ -85,11 +144,12 @@ python src/pipeline.py
 
 ## 🎯 Features
 
-- ✅ Automated ETL pipeline
+- ✅ Automated ETL pipeline with full refresh
 - ✅ Dimensional data modeling (Star Schema)
+- ✅ Bridge tables for many-to-many relationships
 - ✅ Data quality validation
-- ✅ Scheduled workflows with Airflow
-- ✅ Interactive dashboards
+- ✅ Daily batch processing
+- ✅ One-command pipeline execution
 - ✅ Comprehensive testing
 
 ## 📈 Data Warehouse Schema
@@ -110,10 +170,32 @@ python src/pipeline.py
 ## 🔄 Pipeline Workflow
 
 ```
-CSV File → Extract → Transform → Load → PostgreSQL → Dashboards
-                                  ↓
-                            Data Quality Checks
+                    DAILY BATCH PROCESS
+                           ↓
+        Step 0: Clear All Tables (SQL TRUNCATE)
+                           ↓
+        Step 1: Extract CSV → Python reads data
+                           ↓
+        Step 2: Transform → Python creates 7 dataframes
+                           ↓
+        Step 3: Load Staging → Python loads to staging schema
+                           ↓
+        Step 4: Load Dimensions → Python loads with auto-generated keys
+                           ↓
+        Step 5: SQL Conversion → SQL JOINs staging with dimensions
+                           ↓
+        Step 6: Load Fact & Bridge → SQL inserts with keys
+                           ↓
+                    PostgreSQL Warehouse
+                           ↓
+                      Dashboards
 ```
+
+### What Happens Each Day:
+1. **Clear**: All tables truncated (fresh start)
+2. **Python ETL**: Loads staging + dimensions
+3. **SQL Conversion**: Converts names to keys, loads fact + bridge
+4. **Result**: Fresh data, no duplicates!
 
 ## 🧪 Testing
 
@@ -141,7 +223,7 @@ This project is open source and available under the MIT License.
 
 ## 👤 Author
 
-Your Name - [GitHub Profile](https://github.com/margaretajibola)
+Your Name - [https://github.com/margaretajibola]
 
 ## 🙏 Acknowledgments
 
