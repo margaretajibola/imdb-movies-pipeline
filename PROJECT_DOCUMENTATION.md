@@ -117,7 +117,7 @@ from pyspark.sql import SparkSession
 
 **Tasks**:
 1. `check_source_data`: Validate CSV exists
-2. `extract_data`: Load from source
+2. `extract_data`: Load from source (incremental)
 3. `transform_data`: Apply transformations
 4. `load_staging`: Load to staging tables
 5. `load_dimensions`: Populate dimension tables
@@ -132,6 +132,35 @@ check_source_data >> extract_data >> transform_data >> load_staging
 load_staging >> [load_dimensions, load_facts]
 [load_dimensions, load_facts] >> load_analytics >> data_quality_check
 ```
+
+### Data Loading Strategies
+
+**Challenge**: When Airflow runs daily, how to avoid loading duplicate data?
+
+#### Strategy 1: Full Refresh (Development)
+- **Method**: `if_exists='replace'` - Delete and reload all data
+- **Use Case**: Small datasets, development, learning
+- **Pros**: Simple, always fresh data
+- **Cons**: Inefficient for large datasets
+
+#### Strategy 2: Incremental Load (Production)
+- **Method**: `if_exists='append'` - Only load new/changed data
+- **Requirements**:
+  - Date-partitioned files: `data/raw/2024-01-15/imdb_movies.csv`
+  - Change detection logic
+  - Deduplication on unique keys
+- **Pros**: Efficient, scalable
+- **Cons**: More complex implementation
+
+#### Strategy 3: Upsert (Advanced)
+- **Method**: Insert new, update existing
+- **SQL**: `INSERT ... ON CONFLICT (movie_id) DO UPDATE`
+- **Pros**: Handles both inserts and updates
+- **Cons**: Most complex, database-specific
+
+**Implementation for This Project**:
+- Staging layer: Full refresh (temporary data)
+- Core/Analytics: Incremental load with deduplication
 
 ---
 

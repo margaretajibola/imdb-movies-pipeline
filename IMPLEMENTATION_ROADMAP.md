@@ -137,7 +137,6 @@ CREATE TABLE core.fact_movie_performance (
     director_key INTEGER REFERENCES core.dim_directors(director_key),
     votes INTEGER,
     gross_millions DECIMAL(10,2),
-    revenue_per_vote DECIMAL(10,4),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -158,7 +157,7 @@ CREATE TABLE core.bridge_movie_actor (
 ### 2.5 Create Analytics Views
 ```sql
 -- File: sql/ddl/04_analytics_views.sql
-CREATE TABLE analytics.agg_director_stats AS
+CREATE TABLE analytics.agg_director_stats AS -- Change this to a view 
 SELECT 
     d.director_name,
     COUNT(*) as movie_count,
@@ -236,11 +235,26 @@ def transform_movies(df: pd.DataFrame) -> dict:
 from sqlalchemy import create_engine
 import pandas as pd
 
-def load_to_postgres(df: pd.DataFrame, table_name: str, schema: str, engine):
-    """Load dataframe to PostgreSQL"""
-    df.to_sql(table_name, engine, schema=schema, 
-              if_exists='replace', index=False)
-    print(f"Loaded {len(df)} rows to {schema}.{table_name}")
+def load_to_postgres(df: pd.DataFrame, table_name: str, schema: str, engine, load_type='replace'):
+    """Load dataframe to PostgreSQL
+    
+    Args:
+        load_type: 'replace' (full refresh) or 'append' (incremental)
+    
+    Load Strategy:
+    - Staging: Always 'replace' (temporary data)
+    - Core/Analytics: 'replace' for initial load, 'append' for incremental
+    """
+    if schema == 'staging':
+        # Staging: Full refresh daily
+        df.to_sql(table_name, engine, schema=schema, 
+                  if_exists='replace', index=False)
+    else:
+        # Core/Analytics: Use specified load type
+        df.to_sql(table_name, engine, schema=schema, 
+                  if_exists=load_type, index=False)
+    
+    print(f"Loaded {len(df)} rows to {schema}.{table_name} (mode: {load_type})")
 ```
 
 ### 3.4 Main Pipeline
@@ -279,6 +293,47 @@ if __name__ == "__main__":
 
 **Deliverables**: ✅ ETL scripts functional
 
+### 3.5 Data Loading Strategies
+
+**Important: Avoiding Duplicate Data**
+
+When Airflow runs daily, you need a strategy to prevent loading the same data repeatedly:
+
+#### Strategy 1: Full Refresh (Current - Simple)
+```python
+# Good for: Small datasets, learning, development
+if_exists='replace'  # Deletes and reloads all data daily
+```
+**Pros:** Simple, always fresh data  
+**Cons:** Inefficient for large datasets, loses historical changes
+
+#### Strategy 2: Incremental Load (Production)
+```python
+# Good for: Production, large datasets, efficiency
+if_exists='append'  # Only adds new/changed records
+
+# Requires:
+# 1. Date-partitioned source files: data/raw/2024-01-15/imdb_movies.csv
+# 2. Change detection logic (compare with existing data)
+# 3. Deduplication on unique keys (movie_id)
+```
+**Pros:** Efficient, scalable, preserves history  
+**Cons:** More complex, requires change tracking
+
+#### Strategy 3: Upsert (Merge)
+```python
+# Insert new records, update existing ones
+# Requires custom SQL logic:
+INSERT INTO table ... ON CONFLICT (movie_id) DO UPDATE ...
+```
+**Pros:** Handles both new and updated records  
+**Cons:** Most complex, requires database-specific syntax
+
+**Recommendation for This Project:**
+- **Phase 3 (Development):** Use Strategy 1 (Full Refresh)
+- **Phase 4 (Airflow):** Upgrade to Strategy 2 (Incremental)
+- **Advanced:** Implement Strategy 3 (Upsert) for production
+
 ---
 
 ## Phase 4: Airflow Orchestration (Week 3-4)
@@ -296,6 +351,7 @@ airflow users create --username admin --password admin --firstname Admin --lastn
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
+from pathlib import Path
 
 default_args = {
     'owner': 'data_engineer',
@@ -315,9 +371,26 @@ dag = DAG(
     catchup=False
 )
 
+def extract_incremental(**context):
+    """Extract data - checks for new files daily"""
+    execution_date = context['ds']  # e.g., '2024-01-15'
+    
+    # Option 1: Date-partitioned files (production)
+    file_path = f'data/raw/{execution_date}/imdb_movies.csv'
+    
+    # Option 2: Single file (development/learning)
+    # file_path = 'data/raw/imdb_movies.csv'
+    
+    if Path(file_path).exists():
+        return extract_csv(file_path)
+    else:
+        print(f"No new data for {execution_date}")
+        return None
+
 extract_task = PythonOperator(
     task_id='extract_data',
-    python_callable=extract_csv,
+    python_callable=extract_incremental,
+    provide_context=True,
     dag=dag
 )
 
