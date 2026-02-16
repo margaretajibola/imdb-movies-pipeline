@@ -94,7 +94,7 @@ psql -U postgres -d imdb_warehouse -f sql/ddl/03_fact_tables.sql
 
 ### Step 6: Run the Pipeline
 
-#### Option A: One-Command Daily Batch (Recommended)
+#### Option A: One-Command Daily Batch (Recommended for Development)
 ```bash
 ./run_daily_batch.sh
 ```
@@ -119,6 +119,23 @@ cd ..
 psql -U postgres -d imdb_warehouse -f sql/dml/run_full_etl.sql
 ```
 
+#### Option C: Airflow (Recommended for Production)
+See [AIRFLOW_SETUP.md](AIRFLOW_SETUP.md) for detailed instructions.
+
+```bash
+# Quick start
+export AIRFLOW_HOME="$(pwd)/airflow"
+airflow db init
+airflow users create --username admin --password admin --role Admin --email admin@example.com
+
+# Start Airflow
+airflow webserver --port 8080  # Terminal 1
+airflow scheduler                # Terminal 2
+
+# Access UI: http://localhost:8080
+# Trigger DAG: imdb_movies_etl
+```
+
 ### Step 7: Verify Data
 ```bash
 psql -U postgres -d imdb_warehouse
@@ -137,6 +154,7 @@ SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
 ## 📚 Documentation
 
 - [ETL Flow Guide](ETL_FLOW_GUIDE.md) - Complete ETL process explanation
+- [Airflow Setup](AIRFLOW_SETUP.md) - Airflow installation and usage guide
 - [Project Documentation](PROJECT_DOCUMENTATION.md) - Complete project overview
 - [Architecture](ARCHITECTURE.md) - Technical architecture and data flow
 - [Implementation Roadmap](IMPLEMENTATION_ROADMAP.md) - Step-by-step guide
