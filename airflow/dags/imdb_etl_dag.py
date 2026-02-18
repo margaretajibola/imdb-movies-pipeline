@@ -123,6 +123,14 @@ load_fact_bridge = BashOperator(
     dag=dag,
 )
 
+# Task 5: Create aggregate view (SQL)
+create_aggregate_views = BashOperator(
+    task_id='create_aggregate_views',
+    bash_command='psql -U postgres -d imdb_warehouse -f {{ params.project_root }}/sql/queries/create_views.sql',
+    params={'project_root': str(project_root)},
+    dag=dag,
+)
+
 # Task 6: Data quality checks
 def data_quality_check(**context):
     """Verify data loaded correctly"""
@@ -163,4 +171,4 @@ quality_check = PythonOperator(
 )
 
 # Define task dependencies
-clear_tables >> extract_data >> transform_data >> load_data >> load_fact_bridge >> quality_check
+clear_tables >> extract_data >> transform_data >> load_data >> load_fact_bridge >> create_aggregate_views >> quality_check

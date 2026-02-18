@@ -42,6 +42,43 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Step 3: Create Analytics Views
+echo ""
+echo "Step 3: Creating analytics views..."
+psql -U postgres -d imdb_warehouse -f sql/queries/create_views.sql
+
+if [ $? -ne 0 ]; then
+    echo "❌ Analytics views creation failed!"
+    exit 1
+fi
+
+# Step 4: Show Summary
+echo ""
+echo "Step 4: Data Summary..."
+psql -U postgres -d imdb_warehouse << EOF
+SELECT 'dim_movies' as table_name, COUNT(*) as row_count FROM core.dim_movies
+UNION ALL
+SELECT 'dim_directors', COUNT(*) FROM core.dim_directors
+UNION ALL
+SELECT 'dim_genres', COUNT(*) FROM core.dim_genres
+UNION ALL
+SELECT 'dim_actors', COUNT(*) FROM core.dim_actors
+UNION ALL
+SELECT 'fact_movie_performance', COUNT(*) FROM core.fact_movie_performance
+UNION ALL
+SELECT 'bridge_movie_genre', COUNT(*) FROM core.bridge_movie_genre
+UNION ALL
+SELECT 'bridge_movie_actor', COUNT(*) FROM core.bridge_movie_actor
+UNION ALL
+SELECT 'agg_director_stats', COUNT(*) FROM analytics.agg_director_stats
+UNION ALL
+SELECT 'agg_genre_stats', COUNT(*) FROM analytics.agg_genre_stats
+UNION ALL
+SELECT 'agg_year_stats', COUNT(*) FROM analytics.agg_year_stats
+UNION ALL
+SELECT 'agg_decade_stats', COUNT(*) FROM analytics.agg_decade_stats;
+EOF
+
 # Success
 echo ""
 echo "========================================="
