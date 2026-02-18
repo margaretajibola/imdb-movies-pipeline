@@ -9,7 +9,7 @@ This project demonstrates a complete data engineering workflow:
 - **Transform** data using Python/Pandas
 - **Load** into PostgreSQL data warehouse
 - **Orchestrate** with Apache Airflow
-- **Visualize** with Power BI/Tableau
+- **Visualize** with Google Looker
 
 ## 🛠️ Technology Stack
 
@@ -103,7 +103,8 @@ This script automatically:
 1. Clears all tables (full refresh)
 2. Runs Python ETL (extract, transform, load staging & dimensions)
 3. Runs SQL transformations (load fact & bridge tables with keys)
-4. Shows summary of loaded data
+4. Creates analytics views (aggregated metrics)
+5. Shows summary of loaded data
 
 #### Option B: Manual Step-by-Step
 ```bash
@@ -117,6 +118,9 @@ cd ..
 
 # 3. Run SQL transformations
 psql -U postgres -d imdb_warehouse -f sql/dml/run_full_etl.sql
+
+# 4. Create analytics views
+psql -U postgres -d imdb_warehouse -f sql/queries/create_views.sql
 ```
 
 #### Option C: Airflow (Recommended for Production)
@@ -149,6 +153,10 @@ SELECT COUNT(*) FROM core.dim_actors;           -- Should be ~100
 SELECT COUNT(*) FROM core.fact_movie_performance;  -- Should be 1000
 SELECT COUNT(*) FROM core.bridge_movie_genre;   -- Should be ~2000
 SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
+
+-- Check analytics views
+SELECT * FROM analytics.agg_director_stats LIMIT 5;
+SELECT * FROM analytics.agg_genre_stats LIMIT 5;
 ```
 
 ## 📚 Documentation
@@ -182,8 +190,9 @@ SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
 
 ### Analytics Layer
 - `agg_director_stats` - Director performance metrics
-- `agg_genre_trends` - Genre analysis
-- `agg_yearly_revenue` - Revenue trends
+- `agg_genre_stats` - Genre analysis by movie count and ratings
+- `agg_year_stats` - Yearly trends and statistics
+- `agg_decade_stats` - Decade-level aggregations
 
 ## 🔄 Pipeline Workflow
 
@@ -204,6 +213,8 @@ SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
                            ↓
         Step 6: Load Fact & Bridge → SQL inserts with keys
                            ↓
+        Step 7: Create Analytics Views → SQL aggregations
+                           ↓
                     PostgreSQL Warehouse
                            ↓
                       Dashboards
@@ -213,7 +224,8 @@ SELECT COUNT(*) FROM core.bridge_movie_actor;   -- Should be ~4000
 1. **Clear**: All tables truncated (fresh start)
 2. **Python ETL**: Loads staging + dimensions
 3. **SQL Conversion**: Converts names to keys, loads fact + bridge
-4. **Result**: Fresh data, no duplicates!
+4. **Analytics Views**: Creates aggregated metrics for reporting
+5. **Result**: Fresh data, no duplicates!
 
 ## 🧪 Testing
 
@@ -241,7 +253,7 @@ This project is open source and available under the MIT License.
 
 ## 👤 Author
 
-Your Name - [https://github.com/margaretajibola]
+Margaret Ajibola[https://github.com/margaretajibola]
 
 ## 🙏 Acknowledgments
 

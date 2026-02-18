@@ -136,9 +136,11 @@ Run everything with one command:
 ```
 
 This script:
-1. Runs Python ETL (clears staging, loads fresh data)
-2. Runs SQL transformations (clears core tables, loads with keys)
-3. Verifies all counts
+1. Clears all tables (SQL TRUNCATE)
+2. Runs Python ETL (loads staging + dimensions)
+3. Runs SQL transformations (loads fact + bridge with keys)
+4. Creates analytics views (aggregated metrics)
+5. Shows data summary
 
 **What Gets Cleared:**
 - ✅ Staging tables (automatically via `if_exists='replace'`)
@@ -170,12 +172,21 @@ python pipeline.py
 psql -U postgres -d imdb_warehouse -f sql/dml/run_full_etl.sql
 ```
 
-### 4. Verify
+### 4. Create analytics views
+```bash
+psql -U postgres -d imdb_warehouse -f sql/queries/create_views.sql
+```
+
+### 5. Verify
 ```sql
 SELECT COUNT(*) FROM core.dim_movies;
 SELECT COUNT(*) FROM core.fact_movie_performance;
 SELECT COUNT(*) FROM core.bridge_movie_genre;
 SELECT COUNT(*) FROM core.bridge_movie_actor;
+
+-- Check analytics views
+SELECT * FROM analytics.agg_director_stats LIMIT 5;
+SELECT * FROM analytics.agg_genre_stats LIMIT 5;
 ```
 
 ---

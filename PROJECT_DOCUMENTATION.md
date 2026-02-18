@@ -103,10 +103,10 @@ from pyspark.sql import SparkSession
 - `fact_movie_performance`: Performance metrics
 
 ### Analytics Layer (`analytics` schema)
-- `agg_director_stats`: Director performance
-- `agg_genre_trends`: Genre analysis
-- `agg_yearly_revenue`: Revenue trends
-- `agg_top_movies`: Top-rated movies
+- `agg_director_stats`: Director performance metrics
+- `agg_genre_stats`: Genre analysis by movie count and ratings
+- `agg_year_stats`: Yearly trends and statistics
+- `agg_decade_stats`: Decade-level aggregations
 
 ---
 
@@ -116,21 +116,17 @@ from pyspark.sql import SparkSession
 **Schedule**: Daily @ 2:00 AM UTC (`0 2 * * *`)
 
 **Tasks**:
-1. `check_source_data`: Validate CSV exists
-2. `extract_data`: Load from source (incremental)
+1. `clear_tables`: Truncate all tables
+2. `extract_data`: Load from CSV source
 3. `transform_data`: Apply transformations
-4. `load_staging`: Load to staging tables
-5. `load_dimensions`: Populate dimension tables
-6. `load_facts`: Populate fact tables
-7. `load_analytics`: Create aggregated views
-8. `data_quality_check`: Validation tests
-9. `send_notification`: Success/failure alerts
+4. `load_staging_and_dimensions`: Load to staging and dimension tables
+5. `load_fact_and_bridge`: Populate fact and bridge tables with keys
+6. `data_quality_check`: Validation tests
 
 **Dependencies**:
 ```
-check_source_data >> extract_data >> transform_data >> load_staging
-load_staging >> [load_dimensions, load_facts]
-[load_dimensions, load_facts] >> load_analytics >> data_quality_check
+clear_tables >> extract_data >> transform_data >> load_staging_and_dimensions
+load_staging_and_dimensions >> load_fact_and_bridge >> data_quality_check
 ```
 
 ### Data Loading Strategies
@@ -159,8 +155,10 @@ load_staging >> [load_dimensions, load_facts]
 - **Cons**: Most complex, database-specific
 
 **Implementation for This Project**:
+- Full refresh daily batch processing
 - Staging layer: Full refresh (temporary data)
-- Core/Analytics: Incremental load with deduplication
+- Core layer: Full refresh via TRUNCATE CASCADE
+- Analytics layer: Views (auto-refresh on query)
 
 ---
 
@@ -186,7 +184,13 @@ load_staging >> [load_dimensions, load_facts]
 - Rating vs. Revenue correlation (scatter plot)
 - Box office performance by certificate (grouped bar)
 
-**Data Source**: PostgreSQL `analytics` schema
+**Data Source**: PostgreSQL `analytics` schema or exported CSV files
+
+**Export Analytics**:
+```bash
+python src/export_views.py
+```
+Exports views to `data/analytics/*.csv` for visualization tools.
 
 ---
 
@@ -268,19 +272,21 @@ load_staging >> [load_dimensions, load_facts]
 dep_1/
 ├── data/
 │   ├── raw/              # Raw CSV files
-│   └── processed/        # Transformed data
+│   ├── processed/        # Transformed data
+│   └── analytics/        # Exported analytics views
 ├── src/
 │   ├── extract.py        # Data extraction
 │   ├── transform.py      # Transformations
 │   ├── load.py           # Data loading
-│   └── pipeline.py       # Main ETL orchestrator
+│   ├── pipeline.py       # Main ETL orchestrator
+│   └── export_views.py   # Export analytics to CSV
 ├── airflow/
 │   └── dags/
 │       └── imdb_etl_dag.py
 ├── sql/
 │   ├── ddl/              # Table definitions
 │   ├── dml/              # Data transformations
-│   └── queries/          # Analytics queries
+│   └── queries/          # Analytics views
 ├── tests/
 │   ├── test_extract.py
 │   ├── test_transform.py
@@ -293,6 +299,7 @@ dep_1/
 │   └── config.yaml       # Configuration
 ├── requirements.txt      # Python dependencies
 ├── .env.example          # Environment template
+├── run_daily_batch.sh    # Daily batch execution script
 └── README.md             # Setup instructions
 ```
 

@@ -30,11 +30,11 @@ airflow db migrate
 ### Step 3: Create Airflow User
 ```bash
 airflow users create \
-    --username mags \
-    --firstname Margaret \
-    --lastname Ajibola \
+    --username admin \
+    --firstname Admin \
+    --lastname User \
     --role Admin \
-    --email margaretajibola3@@gmail.com \
+    --email admin@example.com \
     --password admin
 ```
 
@@ -67,7 +67,7 @@ airflow scheduler
 
 ### Access Airflow UI
 Open browser: http://localhost:8080
-- Username: `mags`
+- Username: `admin`
 - Password: `admin`
 
 ## Using the DAG
