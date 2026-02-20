@@ -163,34 +163,69 @@ load_staging_and_dimensions >> load_fact_and_bridge >> data_quality_check
 ---
 
 ## 7. Visualization
-**Technology**: Power BI / Tableau / Looker  
+**Technology**: Google Looker Studio  
+**Report Name**: IMDB Movies Analytics Platform
+
 **Dashboards**:
 
-### Dashboard 1: Movie Performance Overview
-- Total movies by year (line chart)
-- Average rating by genre (bar chart)
-- Top 10 highest-grossing movies (table)
-- Rating distribution (histogram)
+### Dashboard 1: Executive Summary
+- KPI cards: Total movies, avg rating, total revenue
+- Movies released per year trend line
+- Top 10 directors by revenue
+- Movie distribution by decade
 
-### Dashboard 2: Director & Cast Analysis
-- Top directors by average rating (bar chart)
-- Most prolific directors (count)
-- Actor collaboration network (network graph)
-- Director-genre specialization (heatmap)
+### Dashboard 2: Genre Performance
+- Genres by movie count (bar chart)
+- Avg rating vs gross by genre (scatter)
+- Genre popularity by decade (heatmap)
+- Genre stats table
 
-### Dashboard 3: Revenue Analytics
-- Revenue trends over time (line chart)
-- Genre revenue comparison (treemap)
-- Rating vs. Revenue correlation (scatter plot)
-- Box office performance by certificate (grouped bar)
+### Dashboard 3: Director Leaderboard
+- Top 20 directors table (rating, movies, revenue)
+- Most prolific directors (bar chart)
+- Director career timeline
+- Director comparison tool
 
-**Data Source**: PostgreSQL `analytics` schema or exported CSV files
+### Dashboard 4: Box Office Analytics
+- Gross revenue trends by year (time series)
+- Revenue by decade (waterfall chart)
+- Revenue distribution by certificate (box plot)
+- Top 10 highest grossing movies
 
-**Export Analytics**:
-```bash
-python src/export_views.py
-```
-Exports views to `data/analytics/*.csv` for visualization tools.
+### Dashboard 5: Ratings & Engagement
+- Rating distribution histogram
+- Votes vs Rating scatter plot
+- Average rating trend by year
+- Most voted movies table
+
+### Dashboard 6: Movie Explorer
+- Search/filter by title, director, actor, genre
+- Movie detail cards
+- Related movies recommendations
+- Cast list with filmography
+
+### Dashboard 7: Historical Trends
+- Movie count + avg rating over time (dual axis)
+- Gross revenue by decade (area chart)
+- Decade comparison (1990s vs 2000s vs 2010s)
+
+### Dashboard 8: Cast Insights
+- Actor collaboration network graph
+- Top actors by movie count
+- Actors by avg movie rating
+- Multi-select actor filter
+
+### Dashboard 9: Content Ratings
+- Movie distribution by certificate (pie chart)
+- Avg gross by certificate (bar chart)
+- Rating distribution by certificate (box plot)
+
+### Dashboard 10: Performance Comparison
+- Genre A vs Genre B side-by-side
+- Movie vs genre average benchmark
+- Percentile rankings
+
+**Data Source**: PostgreSQL `analytics` schema or exported CSV files (`data/analytics/*.csv`)
 
 ---
 
@@ -261,7 +296,6 @@ Exports views to `data/analytics/*.csv` for visualization tools.
 ✅ Data quality & validation  
 ✅ Python data engineering  
 ✅ Dashboard development  
-✅ Cloud storage (S3)  
 ✅ PostgreSQL administration  
 ✅ Workflow automation
 
@@ -271,36 +305,53 @@ Exports views to `data/analytics/*.csv` for visualization tools.
 ```
 dep_1/
 ├── data/
-│   ├── raw/              # Raw CSV files
-│   ├── processed/        # Transformed data
-│   └── analytics/        # Exported analytics views
+│   ├── raw/                  # Raw CSV files
+│   │   └── imdb_movies.csv
+│   ├── processed/            # Transformed data (future use)
+│   └── analytics/            # Exported analytics views (CSV)
+│       ├── agg_director_stats.csv
+│       ├── agg_genre_stats.csv
+│       ├── agg_year_stats.csv
+│       └── agg_decade_stats.csv
 ├── src/
-│   ├── extract.py        # Data extraction
-│   ├── transform.py      # Transformations
-│   ├── load.py           # Data loading
-│   ├── pipeline.py       # Main ETL orchestrator
-│   └── export_views.py   # Export analytics to CSV
+│   ├── extract.py            # Data extraction from CSV
+│   ├── transform.py          # Data transformations
+│   ├── load.py               # Load to PostgreSQL
+│   ├── pipeline.py           # Main ETL orchestrator
+│   └── export_views.py       # Export analytics views to CSV
 ├── airflow/
-│   └── dags/
-│       └── imdb_etl_dag.py
+│   ├── dags/
+│   │   └── imdb_etl_dag.py   # Airflow DAG definition
+│   ├── logs/                 # Airflow execution logs
+│   ├── airflow.cfg           # Airflow configuration
+│   ├── airflow.db            # Airflow metadata database
+│   └── webserver_config.py   # Webserver settings
 ├── sql/
-│   ├── ddl/              # Table definitions
-│   ├── dml/              # Data transformations
-│   └── queries/          # Analytics views
-├── tests/
-│   ├── test_extract.py
-│   ├── test_transform.py
-│   └── test_load.py
-├── validation/
-│   └── data_quality.py   # Validation rules
-├── dashboards/
-│   └── imdb_analytics.pbix
-├── config/
-│   └── config.yaml       # Configuration
-├── requirements.txt      # Python dependencies
-├── .env.example          # Environment template
-├── run_daily_batch.sh    # Daily batch execution script
-└── README.md             # Setup instructions
+│   ├── ddl/                  # Table definitions
+│   │   ├── 01_staging_tables.sql
+│   │   ├── 02_dim_tables.sql
+│   │   └── 03_fact_tables.sql
+│   ├── dml/                  # Data transformations
+│   │   ├── clear_tables.sql
+│   │   ├── load_fact_tables.sql
+│   │   ├── load_bridge_tables.sql
+│   │   └── run_full_etl.sql
+│   └── queries/              # Analytics views
+│       └── create_views.sql
+├── looker_reports/           # Looker dashboard exports
+│   └── IMDB_Movies_Dashboard.pdf
+├── .env                      # Environment variables (not in git)
+├── .env.example              # Environment template
+├── .gitignore                # Git ignore rules
+├── requirements.txt          # Python dependencies
+├── run_daily_batch.sh        # Daily batch execution script
+├── README.md                 # Main documentation
+├── PROJECT_DOCUMENTATION.md  # Detailed project docs
+├── ARCHITECTURE.md           # Architecture overview
+├── ETL_FLOW_GUIDE.md         # ETL process guide
+├── AIRFLOW_SETUP.md          # Airflow setup instructions
+├── IMPLEMENTATION_ROADMAP.md # Implementation guide
+└── CLEANUP_AND_SETUP.md      # Setup instructions
 ```
 
 ---

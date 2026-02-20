@@ -28,22 +28,53 @@ This project demonstrates a complete data engineering workflow:
 ```
 dep_1/
 ├── data/
-│   ├── raw/              # Raw CSV files
-│   └── processed/        # Transformed data
+│   ├── raw/                  # Raw CSV files
+│   │   └── imdb_movies.csv
+│   ├── processed/            # Transformed data (future use)
+│   └── analytics/            # Exported analytics views (CSV)
+│       ├── agg_director_stats.csv
+│       ├── agg_genre_stats.csv
+│       ├── agg_year_stats.csv
+│       └── agg_decade_stats.csv
 ├── src/
-│   ├── extract.py        # Data extraction
-│   ├── transform.py      # Transformations
-│   ├── load.py           # Data loading
-│   └── pipeline.py       # Main ETL orchestrator
+│   ├── extract.py            # Data extraction from CSV
+│   ├── transform.py          # Data transformations
+│   ├── load.py               # Load to PostgreSQL
+│   ├── pipeline.py           # Main ETL orchestrator
+│   └── export_views.py       # Export analytics views to CSV
 ├── airflow/
-│   └── dags/             # Airflow DAGs
+│   ├── dags/
+│   │   └── imdb_etl_dag.py   # Airflow DAG definition
+│   ├── logs/                 # Airflow execution logs
+│   ├── airflow.cfg           # Airflow configuration
+│   ├── airflow.db            # Airflow metadata database
+│   └── webserver_config.py   # Webserver settings
 ├── sql/
-│   ├── ddl/              # Table definitions
-│   ├── dml/              # Data transformations
-│   └── queries/          # Analytics queries
-├── tests/                # Unit tests
-├── validation/           # Data quality checks
-└── dashboards/           # BI dashboards
+│   ├── ddl/                  # Table definitions
+│   │   ├── 01_staging_tables.sql
+│   │   ├── 02_dim_tables.sql
+│   │   └── 03_fact_tables.sql
+│   ├── dml/                  # Data transformations
+│   │   ├── clear_tables.sql
+│   │   ├── load_fact_tables.sql
+│   │   ├── load_bridge_tables.sql
+│   │   └── run_full_etl.sql
+│   └── queries/              # Analytics views
+│       └── create_views.sql
+├── looker_reports/           # Looker dashboard exports
+│   └── IMDB_Movies_Dashboard.pdf
+├── .env                      # Environment variables (not in git)
+├── .env.example              # Environment template
+├── .gitignore                # Git ignore rules
+├── requirements.txt          # Python dependencies
+├── run_daily_batch.sh        # Daily batch execution script
+├── README.md                 # Main documentation
+├── PROJECT_DOCUMENTATION.md  # Detailed project docs
+├── ARCHITECTURE.md           # Architecture overview
+├── ETL_FLOW_GUIDE.md         # ETL process guide
+├── AIRFLOW_SETUP.md          # Airflow setup instructions
+├── IMPLEMENTATION_ROADMAP.md # Implementation guide
+└── CLEANUP_AND_SETUP.md      # Setup instructions
 ```
 
 ## 🚀 Quick Start
@@ -239,9 +270,21 @@ pytest --cov=src tests/
 
 ## 📊 Dashboards
 
-1. **Movie Performance Overview** - Ratings, revenue, trends
-2. **Director & Cast Analysis** - Top performers, collaborations
-3. **Revenue Analytics** - Box office insights
+**Report Name**: IMDB Movies Analytics Platform
+
+**Completed**:
+1. ✅ **Executive Summary** - KPIs, trends, top performers
+
+**Planned**:
+2. Genre Performance - Genre analysis and comparisons
+3. Director Leaderboard - Director rankings and metrics
+4. Box Office Analytics - Revenue trends and insights
+5. Ratings & Engagement - Rating distributions and votes
+6. Movie Explorer - Search and filter movies
+7. Historical Trends - Temporal analysis by year/decade
+8. Cast Insights - Actor performance and collaborations
+9. Content Ratings - Certificate analysis (G, PG, R)
+10. Performance Comparison - Side-by-side comparisons
 
 ## 🤝 Contributing
 
